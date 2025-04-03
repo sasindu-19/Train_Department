@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Lanka Railway System</title>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-800">Sri Lanka Railway System</h1>
+        
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6" id="tabs">
+            <button class="tab-btn px-4 py-2 bg-blue-500 text-white rounded" data-target="trains">Trains</button>
+            <button class="tab-btn px-4 py-2 bg-blue-500 text-white rounded" data-target="attractions">Tourist Attractions</button>
+            <button class="tab-btn px-4 py-2 bg-blue-500 text-white rounded" data-target="lines">Railway Lines</button>
+            <button class="tab-btn px-4 py-2 bg-blue-500 text-white rounded" data-target="classes">Train Classes</button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="mb-4">
+            <input type="text" id="searchInput" placeholder="Search..." 
+                   class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center mb-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        </div>
+
+        <!-- Content Sections -->
+        <div id="content">
+            <!-- Tables will be inserted here dynamically -->
+        </div>
+    </div>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script>
+// Initialize Supabase
+const { createClient } = supabase;
+        const supabaseClient = createClient(
+            'https://unyqhnvcnxszrjvoqptx.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueXFobnZjbnhzenJqdm9xcHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2MjAyMjYsImV4cCI6MjA1OTE5NjIyNn0.K-1hoRE7F5X5ZpBd75-Dae2lUgnwluE8PthDswihMJ4'
+        );
+
+
+// Tab navigation
+document.querySelectorAll('.tab-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        const target = button.dataset.target;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-blue-700'));
+        button.classList.add('bg-blue-700');
+        loadData(target);
+    });
+});
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    filterTable(searchTerm);
+});
+
+async function loadData(table) {
+    try {
+        showLoading();
+        let data;
+        
+        switch(table) {
+            case 'trains':
+                data = await fetchTrains();
+                renderTrainsTable(data);
+                break;
+            case 'attractions':
+                data = await fetchAttractions();
+                renderAttractionsTable(data);
+                break;
+            case 'lines':
+                data = await fetchLines();
+                renderLinesTable(data);
+                break;
+            case 'classes':
+                data = await fetchClasses();
+                renderClassesTable(data);
+                break;
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Data fetching functions
+async function fetchTrains() {
+    const { data, error } = await supabaseClient
+        .from('trains')
+        .select('*');
+    return data;
+}
+
+async function fetchAttractions() {
+    const { data, error } = await supabaseClient
+        .from('touristattractions')
+        .select('*');
+    return data;
+}
+
+async function fetchLines() {
+    const { data, error } = await supabaseClient
+        .from('railwaylines')
+        .select('*');
+    return data;
+}
+
+async function fetchClasses() {
+    const { data, error } = await supabaseClient
+        .from('trainclasses')
+        .select('*');
+    return data;
+}
+
+// Table rendering functions
+function renderTrainsTable(data) {
+    const html = `
+        <table class="w-full bg-white rounded-lg shadow overflow-hidden">
+            <thead class="bg-blue-500 text-white">
+                <tr>
+                    <th class="p-3">Name</th>
+                    <th class="p-3">Departure</th>
+                    <th class="p-3">Arrival</th>
+                    <th class="p-3">Days</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(train => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 border-t">${train.trainname}</td>
+                        <td class="p-3 border-t">${train.departstation} (${train.departtime})</td>
+                        <td class="p-3 border-t">${train.arrivestation} (${train.arrivetime})</td>
+                        <td class="p-3 border-t">${train.operatingdays}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('content').innerHTML = html;
+}
+
+function renderAttractionsTable(data) {
+    const html = `
+        <table class="w-full bg-white rounded-lg shadow overflow-hidden">
+            <thead class="bg-green-500 text-white">
+                <tr>
+                    <th class="p-3">Attraction</th>
+                    <th class="p-3">Section</th>
+                    <th class="p-3">Line</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(attraction => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 border-t">${attraction.attractionname}</td>
+                        <td class="p-3 border-t">${attraction.section}</td>
+                        <td class="p-3 border-t">${attraction.lineid}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('content').innerHTML = html;
+}
+
+// Railway lines වගුව අඳින්න
+function renderLinesTable(data) {
+    const html = `
+        <table class="w-full bg-white rounded-lg shadow overflow-hidden">
+            <thead class="bg-purple-500 text-white">
+                <tr>
+                    <th class="p-3">Line ID</th>
+                    <th class="p-3">Line Name</th>
+                    <th class="p-3">Route</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(line => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 border-t">${line.lineid}</td>
+                        <td class="p-3 border-t">${line.linename}</td>
+                        <td class="p-3 border-t">${line.route}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('content').innerHTML = html;
+}
+
+// Train classes වගුව අඳින්න
+function renderClassesTable(data) {
+    const html = `
+        <table class="w-full bg-white rounded-lg shadow overflow-hidden">
+            <thead class="bg-orange-500 text-white">
+                <tr>
+                    <th class="p-3">Class ID</th>
+                    <th class="p-3">Train ID</th>
+                    <th class="p-3">AC</th>
+                    <th class="p-3">Sleeping</th>
+                    <th class="p-3">Price Range</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(cls => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 border-t">${cls.classid}</td>
+                        <td class="p-3 border-t">${cls.trainid}</td>
+                        <td class="p-3 border-t">${cls.hasac ? '✓' : '✗'}</td>
+                        <td class="p-3 border-t">${cls.hassleeping ? '✓' : '✗'}</td>
+                        <td class="p-3 border-t">${cls.pricerange}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('content').innerHTML = html;
+}
+// Add similar render functions for lines and classes
+
+// Utility functions
+function showLoading() {
+    document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.add('hidden');
+}
+
+function filterTable(searchTerm) {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+// Load initial data
+loadData('trains');
+</script>
+</body>
+</html>
